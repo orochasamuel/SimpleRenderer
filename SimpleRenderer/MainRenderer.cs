@@ -87,6 +87,7 @@ namespace SimpleRenderer
                                 "Recibo do Pagador"),
                         new XElement("table",
                                     new XAttribute("cellpadding", "5"),
+                                    new XAttribute("cellspacing", "0"),
                                     new XAttribute("style", "width: 100%;"),
                                 new XElement("tr",
                                 new XElement("td",
@@ -94,13 +95,13 @@ namespace SimpleRenderer
                                     "{NOME_DO_BANCO}"
                                     )),
                                 new XElement("td",
-                                    new XElement("strong",
-                                        new XAttribute("align", "center"),
+                                    new XAttribute("align", "center"),
+                                        new XElement("strong",
                                         "{CODIGO_DO_BANCO}"
                                     )),
                                 new XElement("td",
-                                    new XElement("strong",
-                                        new XAttribute("align", "right"),
+                                    new XAttribute("align", "right"),
+                                        new XElement("strong",
                                         "{LINHA_DIGITAVEL_DO_BOLETO}"
                                     )))
                                     //new XElement("table",
