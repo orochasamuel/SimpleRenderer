@@ -4,7 +4,7 @@ using System.IO;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace SimpleRenderer.Core
+namespace SimpleRenderer
 {
     public static class MainRenderer
     {
