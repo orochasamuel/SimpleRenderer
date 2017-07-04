@@ -14,12 +14,18 @@ namespace SimpleRenderer
             {
                 switch (bank)
                 {
+                    case 104:
+                        throw new Exception("Layout de Boleto HTML não implementado para Banco CAIXA!");
+                        break;
                     case 341:
                         throw new Exception("Layout de Boleto HTML não implementado para Banco Itaú!");
+                        break;
                     case 999:
                         return Boleto.ConfigureHtml();
+                        break;
                     default:
                         throw new Exception("Oh no! :( That's not right!");
+                        break;
                 }
             }
 
