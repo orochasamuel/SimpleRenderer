@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Xml;
 using System.Xml.Linq;
@@ -33,11 +35,13 @@ namespace SimpleRenderer
             {
                 public static string ConfigureHtml()
                 {
+                    var img64 = GenerateBarCode64(GenerateBarCode("848200000018438301602010705212025975746018261224"), ImageFormat.Png);
+
                     var xDocument = new XDocument(
                         new XDocumentType("html", null, null, null),
                             new XElement("html",
                                 new XElement(ConfigureHeader()),
-                                new XElement(ConfigureBody())));
+                                new XElement(ConfigureBody(img64))));
 
                     var settings = new XmlWriterSettings
                     {
@@ -74,7 +78,7 @@ namespace SimpleRenderer
                             style));
                 }
 
-                private static XElement ConfigureBody()
+                private static XElement ConfigureBody(string barCode64)
                 {
                     return new XElement("body",
                         new XAttribute("text", "#000000"),
@@ -103,52 +107,54 @@ namespace SimpleRenderer
                                     new XAttribute("align", "right"),
                                         new XElement("strong",
                                         "{LINHA_DIGITAVEL_DO_BOLETO}"
-                                    )))
-                                    //new XElement("table",
-                                    //    new XAttribute("width", "666"),
-                                    //    new XAttribute("cellspacing", "5"),
-                                    //    new XAttribute("cellpadding", "0"),
-                                    //    new XAttribute("border", "0"),
-                                    //new XElement("tr",
-                                    //new XElement("td",
-                                    //    new XAttribute("width", "41")))),
-                                    //new XElement("table",
-                                    //    new XAttribute("width", "666"),
-                                    //    new XAttribute("cellspacing", "5"),
-                                    //    new XAttribute("cellpadding", "0"),
-                                    //    new XAttribute("border", "0"),
-                                    //    new XAttribute("align", "default"),
-                                    //new XElement("tr",
-                                    //new XElement("td",
-                                    //    new XAttribute("width", "41"),
-                                    //    new XElement("img",
-                                    //    new XAttribute("src", "{PATH_LOGO_EMPRESA}"))),
-                                    //new XElement("td",
-                                    //    new XAttribute("class", "ti"),
-                                    //    new XAttribute("width", "455"),
-                                    //    "{IDENTIFICAÇÃO}",
-                                    //    "{CPF/CNPJ}",
-                                    //    new XElement("br"),
-                                    //    "{ENDEREÇO}",
-                                    //    "{CIDADE_UF"))),
-                                    //new XElement("br"),
-                                    //new XElement("table",
-                                    //    new XAttribute("width", "666"),
-                                    //    new XAttribute("cellspacing", "0"),
-                                    //    new XAttribute("cellpadding", "0"),
-                                    //    new XAttribute("border", "0"),
-                                    //    new XElement("tr",
-                                    //    new XElement("td",
-                                    //    new XAttribute("class", "cp"),
-                                    //    new XAttribute("width", "150"),
-                                    //    new XElement("span",
-                                    //    new XAttribute("class", "campo"),
-                                    //    new XElement("img",
-                                    //    new XAttribute("src", "{PATH_LOGO_BANCO}"),
-                                    //    new XAttribute("width", "150"),
-                                    //    new XAttribute("height", "40"),
-                                    //    new XAttribute("border", "0")))
-                                    ));
+                                    )))),
+                                    new XElement("div",
+                                        new XAttribute("align", "right"),
+                                        new XElement("small",
+                                    "Autenticação Mecânica - Ficha de Compensação")),
+                                    new XElement("img",
+                                    new XAttribute("style", "width: 68%"),
+                                    new XAttribute("src", barCode64),
+                                    new XAttribute("alt", "BarCode"),
+                                    new XAttribute("height", "65")));
+                }
+
+                public static Image GenerateBarCode(string barCode, int width = 1000, int height = 250)
+                {
+                    BarcodeLib.Barcode b = new BarcodeLib.Barcode();
+
+                    var img = b.Encode(BarcodeLib.TYPE.Interleaved2of5, barCode.Trim(), Color.Black, Color.White, width,
+                        height);
+
+                    #region only tests purposes
+
+                    //// Construct a bitmap from the button image resource.
+                    //Bitmap bmp1 = new Bitmap(img, width, height);
+
+                    //// Save the image as a GIF.
+                    //bmp1.Save(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "test.png"), ImageFormat.Png);
+
+                    #endregion only tests purposes
+
+                    return img;
+                }
+
+                public static string GenerateBarCode64(Image image, ImageFormat format)
+                {
+                    /*
+                     * https://devio.wordpress.com/2011/01/13/embedding-images-in-html-using-c/
+                     */
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        // Convert Image to byte[]
+                        image.Save(ms, format);
+                        byte[] imageBytes = ms.ToArray();
+
+                        // Convert byte[] to base 64 string
+                        string base64String = Convert.ToBase64String(imageBytes);
+
+                        return "data:image/png;base64," + base64String;
+                    }
                 }
             }
         }
