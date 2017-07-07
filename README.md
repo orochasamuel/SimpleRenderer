@@ -6,7 +6,7 @@
 
 [ ] Concluir mapeamento para geração de boleto.
 
-[ ] Implementar código de barras.
+[x] Implementar geração do código de barras.
 
 ### Boleto
 
