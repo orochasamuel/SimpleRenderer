@@ -5,6 +5,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Xml;
 using System.Xml.Linq;
+using SimpleRenderer.Dtos.Boleto;
 
 namespace SimpleRenderer
 {
@@ -12,9 +13,9 @@ namespace SimpleRenderer
     {
         public static class Financial
         {
-            public static string GenerateBoletoHtml(int bank)
+            public static string GenerateBoletoHtml(BoletoDto boleto)
             {
-                switch (bank)
+                switch (boleto.Banco.Codigo)
                 {
                     case 104:
                         throw new Exception("Layout de Boleto HTML não implementado para Banco CAIXA!");
@@ -23,7 +24,7 @@ namespace SimpleRenderer
                         throw new Exception("Layout de Boleto HTML não implementado para Banco Itaú!");
                         break;
                     case 999:
-                        return Boleto.ConfigureHtml();
+                        return Boleto.ConfigureGenericHtml(boleto); // Generic layout
                         break;
                     default:
                         throw new Exception("Oh no! :( That's not right!");
@@ -33,15 +34,16 @@ namespace SimpleRenderer
 
             private static class Boleto
             {
-                public static string ConfigureHtml()
+                public static string ConfigureGenericHtml(BoletoDto boleto)
                 {
-                    var img64 = GenerateBarCode64(GenerateBarCode("848200000018438301602010705212025975746018261224"), ImageFormat.Png);
-
+                    //boleto.CodigoBarras64 = GenerateBarCode64(GenerateBarCode("848200000018438301602010705212025975746018261224"), ImageFormat.Png); // Test line
+                    boleto.CodigoBarras64 = GenerateBarCode64(GenerateBarCode(boleto.CodigoBarras), ImageFormat.Png);
+                    
                     var xDocument = new XDocument(
                         new XDocumentType("html", null, null, null),
                             new XElement("html",
-                                new XElement(ConfigureHeader()),
-                                new XElement(ConfigureBody(img64))));
+                                new XElement(ConfigureGenericHeader()),
+                                new XElement(ConfigureGenericBody(boleto))));
 
                     var settings = new XmlWriterSettings
                     {
@@ -62,7 +64,11 @@ namespace SimpleRenderer
                     return "";
                 }
 
-                private static XElement ConfigureHeader(string style = "table, tr, th, td { border: 0.1px solid #e6e6e6; font-weight: 200; }", string title = "Financial Document", string charset = "ISO-8859-1", string metaName = "Generator", string metaContent = "SimpleRenderer - MIT")
+                private static XElement ConfigureGenericHeader(string style = "table, tr, th, td { border: 0.1px solid #e6e6e6; font-weight: 200; }",
+                    string title = "Financial Document",
+                    string charset = "ISO-8859-1",
+                    string metaName = "Generator",
+                    string metaContent = "SimpleRenderer - MIT")
                 {
                     return new XElement("head",
                         new XElement("title", title),
@@ -78,7 +84,7 @@ namespace SimpleRenderer
                             style));
                 }
 
-                private static XElement ConfigureBody(string barCode64)
+                private static XElement ConfigureGenericBody(BoletoDto boleto)
                 {
                     return new XElement("body",
                         new XAttribute("text", "#000000"),
@@ -86,9 +92,12 @@ namespace SimpleRenderer
                         new XAttribute("leftMargin", "10"),
                         new XAttribute("rightMargin", "10"),
                         new XAttribute("topMargin", "10"),
+                        new XElement("div",
+                                new XAttribute("style", "page-break-after: always;"),
                             new XElement("div",
                                 new XAttribute("align", "right"),
-                                "Recibo do Pagador"),
+                                @"Recibo do Pagador"
+                                ),
                         new XElement("table",
                                     new XAttribute("cellpadding", "5"),
                                     new XAttribute("cellspacing", "0"),
@@ -96,51 +105,79 @@ namespace SimpleRenderer
                                 new XElement("tr",
                                 new XElement("td",
                                     new XElement("strong",
-                                    "{NOME_DO_BANCO}"
+                                    boleto.Banco.Descricao
                                     )),
                                 new XElement("td",
                                     new XAttribute("align", "center"),
                                         new XElement("strong",
-                                        "{CODIGO_DO_BANCO}"
+                                        boleto.Banco.ToString()
                                     )),
                                 new XElement("td",
                                     new XAttribute("align", "right"),
                                         new XElement("strong",
-                                        "{LINHA_DIGITAVEL_DO_BOLETO}"
+                                        boleto.LinhaDigitavel
+                                    )))),
+                        new XElement("table",
+                                    new XAttribute("cellpadding", "5"),
+                                    new XAttribute("cellspacing", "0"),
+                                    new XAttribute("style", "width: 100%;"),
+                                new XElement("tr",
+                                new XElement("th",
+                                    new XElement("small",
+                                    @"Nome do Pagador/CPF/CNPJ"
+                                    )),
+                                new XElement("th",
+                                new XAttribute("style", "width: 20%;"),
+                                    new XElement("small",
+                                    @"Nosso Número"
+                                    )),
+                                new XElement("th",
+                                new XAttribute("style", "width: 15%;"),
+                                    new XElement("small",
+                                    @"Vencimento"
+                                    ))),
+                                new XElement("tr",
+                                new XElement("td",
+                                        new XElement("small",
+                                        string.Format($"{boleto.Pagador.Nome} / {boleto.Pagador.CpfCnpj}")
+                                    )),
+                                new XElement("td",
+                                        new XElement("small",
+                                        string.Format($"{boleto.NossoNumero}")
+                                    )),
+                                new XElement("td",
+                                        new XElement("small",
+                                        string.Format($"{boleto.DataVencimento}")
                                     )))),
                                     new XElement("div",
                                         new XAttribute("align", "right"),
                                         new XElement("small",
-                                    "Autenticação Mecânica - Ficha de Compensação")),
+                                    @"Autenticação Mecânica - Ficha de Compensação")),
                                     new XElement("img",
                                     new XAttribute("style", "width: 68%"),
-                                    new XAttribute("src", barCode64),
+                                    new XAttribute("src", boleto.CodigoBarras64),
                                     new XAttribute("alt", "BarCode"),
-                                    new XAttribute("height", "65")));
+                                    new XAttribute("height", "65"))));
                 }
 
-                public static Image GenerateBarCode(string barCode, int width = 1000, int height = 250)
+                public static Image GenerateBarCode(string barCode, int width = 699, int height = 233)
                 {
+                    if (barCode == null)
+                        throw new ArgumentNullException("barcode");
+
                     BarcodeLib.Barcode b = new BarcodeLib.Barcode();
 
                     var img = b.Encode(BarcodeLib.TYPE.Interleaved2of5, barCode.Trim(), Color.Black, Color.White, width,
                         height);
-
-                    #region only tests purposes
-
-                    //// Construct a bitmap from the button image resource.
-                    //Bitmap bmp1 = new Bitmap(img, width, height);
-
-                    //// Save the image as a GIF.
-                    //bmp1.Save(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "test.png"), ImageFormat.Png);
-
-                    #endregion only tests purposes
 
                     return img;
                 }
 
                 public static string GenerateBarCode64(Image image, ImageFormat format)
                 {
+                    if (image == null)
+                        throw new ArgumentNullException("image");
+
                     /*
                      * https://devio.wordpress.com/2011/01/13/embedding-images-in-html-using-c/
                      */
