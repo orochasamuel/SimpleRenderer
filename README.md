@@ -6,8 +6,4 @@
 
 [ ] Concluir mapeamento para geração de boleto.
 
-[ ] Implementar código de barras.
-
-### Boleto
-
-![screenshot](https://github.com/samuelroliveira/SimpleRenderer/blob/master/simpleRendererResult.png)
+[x] Implementar geração do código de barras.
